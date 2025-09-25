@@ -38,7 +38,7 @@ app.post('/create-order', async (req, res) => {
         const userIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
         console.log("Customer ka Asli IP Hai:", userIp);
 
-        const ipApiResponse = await axios.get(`https://ipapi.co/${userIp}/json`);
+       const ipApiResponse = await axios.get(`http://ip-api.com/json/${userIp}`);
         const country = ipApiResponse.data.country_code;
         console.log("User ki Asli country hai:", country);
 
