@@ -6,23 +6,22 @@ const axios = require('axios'); // IP address se country pata karne ke liye
 
 const app = express();
 app.use(cors());
-app.use(express.json()); // body-parser ki zaroorat nahi, express mein ab yeh built-in hai
+app.use(express.json());
 
 // ====== 2. Saari SECRET KEYS ek jagah daalo ======
-// APNI KEYS DOBARA CHECK KARKE SAHI SE PASTE KARO BINA KISI EXTRA SPACE/LINE KE
-const RAZORPAY_KEY_ID = 'rzp_live_RLkItpyfR0k6sx';
-const RAZORPAY_KEY_SECRET = 'G2NA6Ky49B4UqyKkz5mdur3b'; // <-- Galti yahan thi. Maine theek kar di hai.
+// YEH AAPKE COMPUTER PAR TESTING KE LIYE HAIN. LIVE SERVER RENDER SE KEYS LEGA.
+const RAZORPAY_KEY_ID = process.env.RAZORPAY_KEY_ID || 'rzp_live_RLkItpyfR0k6sx';
+const RAZORPAY_KEY_SECRET = process.env.RAZORPAY_KEY_SECRET || 'G2NA6Ky49B4UqyKkz5mdur3b';
 
-// PayPal keys bhi theek kar di hain
-const PAYPAL_CLIENT_ID = 'Ae9RSMe8RbD2q3YWB-LMnfjThmOA2-WKkgs1DhGcgdUAGI39DxfrHdjNeCDmUkbvV-i2IebWm7Js9B8';
-const PAYPAL_CLIENT_SECRET = 'ELZsokNzaJ9DuftQSTEujnR-dhx1EpyTtmaexTdMLH3RYiucEYpZDnLJcJu16r_0QkPSQ2nt2v9o0pls';
+const PAYPAL_CLIENT_ID = process.env.PAYPAL_CLIENT_ID || 'Ae9RSMe8RbD2q3YWB-LMnfjThmOA2-WKkgs1DhGcgdUAGI39DxfrHdjNeCDmUkbvV-i2IebWm7Js9B8';
+const PAYPAL_CLIENT_SECRET = process.env.PAYPAL_CLIENT_SECRET || 'ELZsokNzaJ9DuftQSTEujnR-dhx1EpyTtmaexTdMLH3RYiucEYpZDnLJcJu16r_0QkPSQ2nt2v9o0pls';
 
 
 // ====== 3. Connections Banaao ======
 const razorpay = new Razorpay({ key_id: RAZORPAY_KEY_ID, key_secret: RAZORPAY_KEY_SECRET });
 
 
-// ====== 4. Main API (Frontend se connect karne ke liye update kar diya hai) ======
+// ====== 4. Main API (Final Sahi Code) ======
 app.post('/create-order', async (req, res) => {
     try {
         // Step 1: Frontend se bheje gaye cart items ko yahan get karo
@@ -32,49 +31,37 @@ app.post('/create-order', async (req, res) => {
             return res.status(400).send("Cart khali hai. Please add items.");
         }
 
-        // Abhi ke liye, maan lete hain ki har course ki price ₹199 hai
-        // Asli project mein, aap in item IDs se database se price nikaloge
         const pricePerCourseINR = 199;
         const totalAmount = items.length * pricePerCourseINR;
-        const totalAmountInPaise = totalAmount * 100; // Razorpay ke liye paise me convert karna zaroori hai
+        const totalAmountInPaise = totalAmount * 100;
 
-        // Step 2: User ki country pata karo
-        const ipApiResponse = await axios.get('https://ipapi.co/json');
+        // Step 2: Customer ka asli IP Address pata karo
+        // Render server hamein customer ka IP is header mein bhejta hai
+        const userIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+        console.log("Customer ka Asli IP Hai:", userIp);
+
+        // Ab is IP se country pata karo
+        const ipApiResponse = await axios.get(`https://ipapi.co/${userIp}/json`);
         const country = ipApiResponse.data.country_code;
-        console.log("User ki country hai:", country);
+        console.log("User ki Asli country hai:", country);
 
         // Step 3: Country ke hisab se payment gateway chuno
         if (country === 'IN') {
             console.log(`Razorpay process shuru kar rahe hain... Amount: ₹${totalAmount}`);
-
-            const options = {
-                amount: totalAmountInPaise,
-                currency: "INR",
-                receipt: `receipt_order_${Date.now()}`
-            };
-
+            const options = { amount: totalAmountInPaise, currency: "INR", receipt: `receipt_order_${Date.now()}` };
             const order = await razorpay.orders.create(options);
             console.log("Razorpay order safaltapoorvak ban gaya:", order);
             res.json({ gateway: 'razorpay', orderDetails: order });
 
         } else {
             console.log("International User hai. PayPal process shuru kar rahe hain...");
-            // Yahan par aapka PayPal order banane ka code aayega
-            // Abhi ke liye temporary message bhej rahe hain
             res.json({ gateway: 'paypal', message: 'PayPal coming soon' });
         }
 
     } catch (error) {
-        // ===== YAHAN HUMNE ERROR KO ACCHE SE CHECK KARNE KA CODE DAALA HAI =====
         console.error("--- BHAYANKAR ERROR AAYA HAI ---");
-        if (error) {
-            console.error("Asli Error Message:", error.message);
-            if(error.response) { // Agar network se error hai
-                 console.error("Error Data:", error.response.data);
-            }
-        } else {
-            console.error("Ek ajeeb 'undefined' error aaya hai. API Keys dobara check karo.");
-        }
+        if (error) { console.error("Asli Error Message:", error.message); if(error.response) { console.error("Error Data:", error.response.data); }
+        } else { console.error("Ek ajeeb 'undefined' error aaya hai. API Keys dobara check karo."); }
         res.status(500).send("Server me error aa gaya");
     }
 });
@@ -84,4 +71,4 @@ app.post('/create-order', async (req, res) => {
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Final server port ${PORT} par chalu ho gaya hai!`);
-});
+});```
