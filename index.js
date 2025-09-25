@@ -34,11 +34,14 @@ app.post('/create-order', async (req, res) => {
         const totalAmount = items.length * pricePerCourseINR;
         const totalAmountInPaise = totalAmount * 100;
 
-        // Customer ka asli IP Address pata karo
-        const userIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+        // Customer ka asli IP Address pata karo (*** YAHAN PAR CODE THEEK KIYA GAYA HAI ***)
+        const forwardedIps = req.headers['x-forwarded-for'];
+        const userIp = forwardedIps ? forwardedIps.split(',')[0].trim() : req.socket.remoteAddress;
+        
         console.log("Customer ka Asli IP Hai:", userIp);
 
-       const ipApiResponse = await axios.get(`http://ip-api.com/json/${userIp}`);
+        // IP se country pata karo
+        const ipApiResponse = await axios.get(`http://ip-api.com/json/${userIp}`);
         const country = ipApiResponse.data.country_code;
         console.log("User ki Asli country hai:", country);
 
@@ -50,6 +53,7 @@ app.post('/create-order', async (req, res) => {
             res.json({ gateway: 'razorpay', orderDetails: order });
         } else {
             console.log("International User hai. PayPal process shuru kar rahe hain...");
+            // Asli PayPal logic yahan aayega jab aap banayenge
             res.json({ gateway: 'paypal', message: 'PayPal coming soon' });
         }
 
