@@ -5,10 +5,16 @@ const cors = require('cors');
 const axios = require('axios');
 
 const app = express();
-app.use(cors());
+
+// === FIX 1: SIRF AAPKI WEBSITE SE REQUEST ALLOW KARNE KE LIYE YEH CODE DAALA HAI ===
+// Isse CORS error theek ho jayega. 'https://skillpermium.store' ki jagah aap apni final website ka URL daalein.
+app.use(cors({
+    origin: 'https://skillpermium.store' 
+}));
+
 app.use(express.json());
 
-// ====== 2. Saari SECRET KEYS (Aapke کہنے par seedhe yahan daal di hain) ======
+// ====== 2. Saari SECRET KEYS (Aapke कहने par seedhe yahan daal di hain) ======
 // WARNING: Yeh tareeka SURAKSHIT (SAFE) nahi hai!
 const IPDATA_API_KEY = 'c70c9cf7304fd5e84bbd6f1b49107108a745c24f457a6fa5092a898f';
 const RAZORPAY_KEY_ID = 'rzp_live_RLkItpyfR0k6sx';
@@ -78,5 +84,6 @@ app.post('/create-order', async (req, res) => {
 
 
 // ====== 5. Server ko Chalu Karo ======
+// === FIX 2: AAKHIR MEIN JO FALTU TEXT LIKHA THA, WOH HATA DIYA GAYA HAI ===
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Final A-One server ${PORT} par chalu ho gaya hai!`));
