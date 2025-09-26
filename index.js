@@ -8,18 +8,20 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// ====== 2. Saari SECRET KEYS (Render par Environment se aur yahan testing ke liye) ======
-const IPDATA_API_KEY = process.env.IPDATA_API_KEY || 'c70c9cf7304fd5e84bbd6f1b49107108a745c24f457a6fa5092a898f';
-const RAZORPAY_KEY_ID = process.env.rzp_live_RLkItpyfR0k6sx;
-const RAZORPAY_KEY_SECRET = process.env.G2NA6Ky49B4UqyKkz5mdur3b;
-const PAYPAL_CLIENT_ID = process.env.Ae9RSMe8RbD2q3YWB-LMnfjThmOA2-WKkPgs1DhGcgdUAGI39DxfrHdjNeCDmUkbvV-i2IebWm7Js9B8;
-const PAYPAL_CLIENT_SECRET = process.env.ELZsokNzaJ9DuftQSTEujnR-dhx1EpyTtmaexTdMLH3RYiucEYpZDnLJcJu16r_0QkPSQ2nt2v9o0pls
+// ====== 2. Saari SECRET KEYS (Aapke کہنے par seedhe yahan daal di hain) ======
+// WARNING: Yeh tareeka SURAKSHIT (SAFE) nahi hai!
+const IPDATA_API_KEY = 'c70c9cf7304fd5e84bbd6f1b49107108a745c24f457a6fa5092a898f';
+const RAZORPAY_KEY_ID = 'rzp_live_RLkItpyfR0k6sx';
+const RAZORPAY_KEY_SECRET = 'G2NA6Ky49B4UqyKkz5mdur3b';
+const PAYPAL_CLIENT_ID = 'Ae9RSMe8RbD2q3YWB-LMnfjThmOA2-WKkPgs1DhGcgdUAGI39DxfrHdjNeCDmUkbvV-i2IebWm7Js9B8';
+const PAYPAL_CLIENT_SECRET = 'ELZsokNzaJ9DuftQSTEujnR-dhx1EpyTtmaexTdMLH3RYiucEYpZDnLJcJu16r_0QkPSQ2nt2v9o0pls';
 
-;
 
 // ====== 3. Connections Banaao ======
 const razorpay = new Razorpay({ key_id: RAZORPAY_KEY_ID, key_secret: RAZORPAY_KEY_SECRET });
 const PAYPAL_API_BASE = 'https://api-m.paypal.com';
+console.log("Saare connections taiyaar hain!");
+
 
 // ====== Helper Function: PayPal ka order banane ke liye ======
 const createPayPalOrder = async (totalAmountUSD) => {
@@ -29,7 +31,6 @@ const createPayPalOrder = async (totalAmountUSD) => {
             headers: { 'Authorization': `Basic ${auth}` }
         });
         const accessToken = tokenResponse.data.access_token;
-
         const orderPayload = {
             intent: 'CAPTURE',
             purchase_units: [{ amount: { currency_code: 'USD', value: totalAmountUSD.toFixed(2) } }]
@@ -39,10 +40,11 @@ const createPayPalOrder = async (totalAmountUSD) => {
         });
         return orderResponse.data;
     } catch (error) {
-        console.error("PayPal order banane me bhayankar error aaya hai:", error.response ? error.response.data : error.message);
+        console.error("PayPal order banane me error aaya hai:", error.response ? error.response.data : error.message);
         throw new Error("PayPal order creation failed");
     }
 };
+
 
 // ====== 4. Main API (Ekdum Final A-One Code) ======
 app.post('/create-order', async (req, res) => {
@@ -54,24 +56,22 @@ app.post('/create-order', async (req, res) => {
             const pricePerCourseINR = 199;
             const totalAmount = items.length * pricePerCourseINR;
             const totalAmountInPaise = totalAmount * 100;
-            
-            console.log(`Razorpay process shuru kar rahe hain...`);
             const options = { amount: totalAmountInPaise, currency: "INR", receipt: `receipt_${Date.now()}` };
             const order = await razorpay.orders.create(options);
+            console.log("Razorpay order ban gaya!");
             res.json({ gateway: 'razorpay', orderDetails: order });
 
         } else if (gatewayPreference === 'paypal') {
-            const pricePerCourseUSD = 2.50; // Aap isse change kar sakte ho
+            const pricePerCourseUSD = 2.50;
             const totalAmountUSD = items.length * pricePerCourseUSD;
-
-            console.log(`PayPal process shuru kar rahe hain...`);
             const order = await createPayPalOrder(totalAmountUSD);
+            console.log("PayPal order ban gaya!");
             res.json({ gateway: 'paypal', orderDetails: order });
-
         } else {
             res.status(400).send("Sahi gateway nahi chuna gaya.");
         }
     } catch (error) {
+        console.error("Order banane me bhayankar error:", error.message);
         res.status(500).send("Server me order banate waqt error aa gaya");
     }
 });
